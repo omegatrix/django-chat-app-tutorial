@@ -1,20 +1,17 @@
 from django.shortcuts import render, redirect
-from django.contrib import messages
 from django.http import HttpRequest, HttpResponse
 from django.db.models import Q
-from django.contrib.auth.models import User
+from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 
 from .models import Message, Room, Topic
-from .forms import RoomForm
-# Create your views here.
+from .forms import RoomForm, UserForm
 
 
 def login_user(request: HttpRequest) -> HttpResponse:
-    flow = 'login'
-
     if request.user.is_authenticated:
         return redirect('home')
 
@@ -23,11 +20,9 @@ def login_user(request: HttpRequest) -> HttpResponse:
         password = request.POST.get('password')
 
         try:
-            User.objects.get(username=username)
+            user = authenticate(request, username=username, password=password)
         except:
             messages.error(request, 'User does not exist')
-
-        user = authenticate(request, username=username, password=password)
 
         if user is not None:
             login(request, user)
@@ -36,11 +31,7 @@ def login_user(request: HttpRequest) -> HttpResponse:
         else:
             messages.error(request, 'Username or password does not exist')
 
-    context = {
-        'flow': flow
-    }
-
-    return render(request, 'base/login_register.html', context)
+    return render(request, 'base/login.html')
 
 
 def logout_user(request: HttpRequest) -> HttpResponse:
@@ -68,7 +59,7 @@ def register_user(request: HttpRequest) -> HttpResponse:
         else:
             messages.error(request, 'Failed to register user')
 
-    return render(request, 'base/login_register.html', context)
+    return render(request, 'base/register.html', context)
 
 
 def home(request: HttpRequest) -> HttpResponse:
@@ -130,6 +121,25 @@ def user_profile(request: HttpRequest, pk: int) -> HttpResponse:
     }
 
     return render(request, 'base/user_profile.html', context)
+
+
+@login_required(login_url='login')
+def update_user(request: HttpRequest) -> HttpResponse:
+    user = request.user
+    form = UserForm(instance=user)
+    context = {
+        'form': form,
+    }
+
+    if request.method == 'POST':
+        form = UserForm(request.POST, instance=user)
+
+        if form.is_valid():
+            form.save()
+
+            return redirect('user-profile', pk=request.user.id)
+
+    return render(request, 'base/update-user.html', context)
 
 
 @login_required(login_url='login')
