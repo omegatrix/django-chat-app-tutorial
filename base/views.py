@@ -4,10 +4,9 @@ from django.db.models import Q
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import UserCreationForm
 
 from .models import User, Message, Room, Topic
-from .forms import RoomForm, UserForm
+from .forms import RoomForm, UserForm, UserRegistrationForm
 
 
 def login_user(request: HttpRequest) -> HttpResponse:
@@ -15,11 +14,11 @@ def login_user(request: HttpRequest) -> HttpResponse:
         return redirect('home')
 
     if request.method == 'POST':
-        username = request.POST.get('username')
+        email = request.POST.get('email').lower()
         password = request.POST.get('password')
 
         try:
-            user = authenticate(request, username=username, password=password)
+            user = authenticate(request, email=email, password=password)
         except:
             messages.error(request, 'User does not exist')
 
@@ -40,13 +39,13 @@ def logout_user(request: HttpRequest) -> HttpResponse:
 
 
 def register_user(request: HttpRequest) -> HttpResponse:
-    form = UserCreationForm()
+    form = UserRegistrationForm()
     context = {
         'form': form
     }
 
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = UserRegistrationForm(request.POST)
 
         if form.is_valid():
             user = form.save(commit=False)
@@ -131,7 +130,7 @@ def update_user(request: HttpRequest) -> HttpResponse:
     }
 
     if request.method == 'POST':
-        form = UserForm(request.POST, instance=user)
+        form = UserForm(request.POST, request.FILES, instance=user)
 
         if form.is_valid():
             form.save()
