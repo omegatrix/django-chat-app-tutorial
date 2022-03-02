@@ -1,7 +1,6 @@
 from django.forms import ModelForm
-from django.contrib.auth.models import User
 
-from .models import Room
+from .models import User, Room
 
 
 class RoomForm(ModelForm):
